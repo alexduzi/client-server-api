@@ -31,8 +31,7 @@ func CreateServer() {
 }
 
 func ExchangeRateFunc(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, TIMEOUT_EXCHANGE_API)
+	ctx, cancel := context.WithTimeout(context.Background(), TIMEOUT_EXCHANGE_API)
 	defer cancel()
 
 	body, err := getExchangeRate(ctx)
@@ -54,7 +53,7 @@ func ExchangeRateFunc(w http.ResponseWriter, r *http.Request) {
 		log.Println("api de cotação chamada com sucesso")
 	}
 
-	ctx, cancel = context.WithTimeout(ctx, TIMEOUT_EXCHANGE_DB)
+	ctx, cancel = context.WithTimeout(context.Background(), TIMEOUT_EXCHANGE_DB)
 	defer cancel()
 
 	err = database.InsertExchange(ctx, URL_EXCHANGE_RATE, string(body))
