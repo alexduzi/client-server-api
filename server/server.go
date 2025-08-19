@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/alexduzi/client-server-api/model"
 	"github.com/alexduzi/client-server-api/server/database"
 )
 
@@ -54,6 +56,12 @@ func ExchangeRateFunc(w http.ResponseWriter, r *http.Request) {
 
 	database.InsertExchange(ctxDb, URL_EXCHANGE_RATE, string(body))
 
+	var exchange model.Exchange
+	json.Unmarshal(body, &exchange)
+
+	exchangeResp := model.ExchangeResponse{Bid: exchange.Usdbrl.Bid}
+	exchangeRespJson, _ := json.Marshal(exchangeResp)
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(body)
+	w.Write(exchangeRespJson)
 }

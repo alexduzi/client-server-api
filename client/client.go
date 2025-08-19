@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	URL_EXCHANGE_RATE       string        = "http://localhost:8080/contacao"
+	URL_EXCHANGE_RATE       string        = "http://localhost:8080/cotacao"
 	TIMEOUT_EXCHANGE_CLIENT time.Duration = time.Millisecond * 300
 )
 
@@ -38,14 +38,21 @@ func main() {
 		panic(err)
 	}
 
-	var exchange model.Exchange
-	json.Unmarshal(body, &exchange)
+	createFile(body)
+}
 
-	file, err := os.OpenFile("./cotacao.txt", os.O_CREATE, 0644)
+func createFile(body []byte) {
+	var exchangeResp model.ExchangeResponse
+	json.Unmarshal(body, &exchangeResp)
+
+	file, err := os.OpenFile("./cotacao.txt", os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	file.WriteString(fmt.Sprintf("Dólar: %f", exchange.Usdbrl.Bid))
+	_, err = file.Write([]byte(fmt.Sprintf("Dólar: %s", exchangeResp.Bid)))
+	if err != nil {
+		panic(err)
+	}
 }
