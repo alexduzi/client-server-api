@@ -52,7 +52,10 @@ func InsertExchange(ctx context.Context, url, json string) error {
 
 	sqlSmt := `INSERT INTO exchange (url, data) VALUES(?, ?)`
 
-	insertPrepare, err := db.Prepare(sqlSmt)
+	insertPrepare, err := db.PrepareContext(ctx, sqlSmt)
+	if err != nil {
+		return err
+	}
 
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -60,10 +63,6 @@ func InsertExchange(ctx context.Context, url, json string) error {
 	}
 
 	smt := tx.StmtContext(ctx, insertPrepare)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
 	defer smt.Close()
 
 	_, err = smt.ExecContext(ctx, url, json)

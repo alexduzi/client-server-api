@@ -38,10 +38,10 @@ func main() {
 		panic(err)
 	}
 
-	createFile(body)
+	saveContentToFile(body)
 }
 
-func createFile(body []byte) {
+func saveContentToFile(body []byte) {
 	var exchangeResp model.ExchangeResponse
 	json.Unmarshal(body, &exchangeResp)
 
