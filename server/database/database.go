@@ -5,8 +5,13 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+)
+
+const (
+	TIMEOUT_EXCHANGE_DB time.Duration = time.Millisecond * 10 // 10 ms
 )
 
 func createDb() {
@@ -47,6 +52,9 @@ func InitializeDb() {
 }
 
 func InsertExchange(ctx context.Context, url, json string) error {
+	ctx, cancel := context.WithTimeout(ctx, TIMEOUT_EXCHANGE_DB)
+	defer cancel()
+
 	db, _ := openConnection()
 	defer db.Close()
 
@@ -71,6 +79,13 @@ func InsertExchange(ctx context.Context, url, json string) error {
 		return err
 	}
 	tx.Commit()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		log.Println("cotação inserida com sucesso na base de dados")
+	}
 
 	return nil
 }
