@@ -18,6 +18,8 @@ func main() {
 
 func CreateServer() {
 	database.InitializeDb()
+	defer database.CloseDb()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/cotacao", ExchangeRateFunc)
 	log.Fatal(http.ListenAndServe(":8080", mux))

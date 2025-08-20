@@ -14,7 +14,7 @@ import (
 
 const (
 	URL_EXCHANGE_RATE       string        = "http://localhost:8080/cotacao"
-	TIMEOUT_EXCHANGE_CLIENT time.Duration = time.Millisecond * 300
+	TIMEOUT_EXCHANGE_CLIENT time.Duration = time.Millisecond * 300 // 300 ms
 )
 
 func main() {

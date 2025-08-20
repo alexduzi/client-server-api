@@ -14,6 +14,11 @@ const (
 	TIMEOUT_EXCHANGE_DB time.Duration = time.Millisecond * 10 // 10 ms
 )
 
+var (
+	db   *sql.DB
+	stmt *sql.Stmt
+)
+
 func createDb() {
 	file, err := os.OpenFile("./exchange.db", os.O_CREATE, 0644)
 	if err != nil {
@@ -22,20 +27,17 @@ func createDb() {
 	defer file.Close()
 }
 
-func openConnection() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./exchange.db")
-	if err != nil {
-		panic(err)
-	}
-	db.SetMaxOpenConns(1)
-	return db, nil
-}
-
 func InitializeDb() {
 	createDb()
 
-	db, _ := openConnection()
-	defer db.Close()
+	db, err := sql.Open("sqlite3", "./exchange.db?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_timeout=5000")
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(0)
 
 	sqlStmt := `
 		CREATE TABLE IF NOT EXISTS exchange (
@@ -45,9 +47,15 @@ func InitializeDb() {
 		createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		);`
 
-	_, err := db.Exec(sqlStmt)
+	_, err = db.Exec(sqlStmt)
 	if err != nil {
 		log.Fatalf("error creating table: %q: %s\n", err, sqlStmt)
+	}
+
+	sqlInsert := `INSERT INTO exchange (url, data) VALUES(?, ?)`
+	stmt, err = db.Prepare(sqlInsert)
+	if err != nil {
+		log.Fatalf("error preparing statement: %v", err)
 	}
 }
 
@@ -55,30 +63,10 @@ func InsertExchange(ctx context.Context, url, json string) error {
 	ctx, cancel := context.WithTimeout(ctx, TIMEOUT_EXCHANGE_DB)
 	defer cancel()
 
-	db, _ := openConnection()
-	defer db.Close()
-
-	sqlSmt := `INSERT INTO exchange (url, data) VALUES(?, ?)`
-
-	insertPrepare, err := db.PrepareContext(ctx, sqlSmt)
+	_, err := stmt.ExecContext(ctx, url, json)
 	if err != nil {
 		return err
 	}
-
-	tx, err := db.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-
-	smt := tx.StmtContext(ctx, insertPrepare)
-	defer smt.Close()
-
-	_, err = smt.ExecContext(ctx, url, json)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
 
 	select {
 	case <-ctx.Done():
@@ -88,4 +76,13 @@ func InsertExchange(ctx context.Context, url, json string) error {
 	}
 
 	return nil
+}
+
+func CloseDb() {
+	if stmt != nil {
+		stmt.Close()
+	}
+	if db != nil {
+		db.Close()
+	}
 }
