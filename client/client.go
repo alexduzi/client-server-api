@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -18,8 +19,7 @@ const (
 )
 
 func main() {
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, TIMEOUT_EXCHANGE_CLIENT)
+	ctx, cancel := context.WithTimeout(context.Background(), TIMEOUT_EXCHANGE_CLIENT)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", URL_EXCHANGE_RATE, nil)
@@ -32,6 +32,13 @@ func main() {
 		panic(err)
 	}
 	defer resp.Body.Close()
+
+	select {
+	case <-ctx.Done():
+		log.Println(ctx.Err())
+	default:
+		log.Println("api server call success")
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

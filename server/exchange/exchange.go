@@ -35,6 +35,7 @@ func GetExchangeRate(ctx context.Context) ([]byte, error) {
 
 	select {
 	case <-ctx.Done():
+		log.Println(ctx.Err())
 		return nil, ctx.Err()
 	default:
 		log.Println("api exchange call success")

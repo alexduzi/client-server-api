@@ -20,7 +20,7 @@ var (
 )
 
 func createDb() {
-	file, err := os.OpenFile("./exchange.db", os.O_CREATE, 0644)
+	file, err := os.OpenFile("./cotacao.db", os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalf("failed to open/create file: %v", err)
 	}
@@ -30,7 +30,7 @@ func createDb() {
 func InitializeDb() {
 	createDb()
 
-	db, err := sql.Open("sqlite3", "./exchange.db?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_timeout=5000")
+	db, err := sql.Open("sqlite3", "./cotacao.db?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_timeout=5000")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
@@ -70,9 +70,10 @@ func InsertExchange(ctx context.Context, url, json string) error {
 
 	select {
 	case <-ctx.Done():
+		log.Println(ctx.Err())
 		return ctx.Err()
 	default:
-		log.Println("cotação inserida com sucesso na base de dados")
+		log.Println("exchange inserted!")
 	}
 
 	return nil
